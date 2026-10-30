@@ -1,0 +1,11 @@
+{
+  "name": "winner-balance-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Winner Balance Public Web Portal & Android Deep-Link Router",
+  "scripts": {
+    "dev": "node web/server.js",
+    "start": "node web/server.js",
+    "build": "echo 'Winner Balance web portal ready'"
+  }
+}

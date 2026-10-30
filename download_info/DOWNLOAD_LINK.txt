@@ -1,0 +1,15 @@
+============================================================
+WINNER BALANCE — DEPLOYED APP & PUBLIC USER LINKS
+============================================================
+
+1. DEPLOYED PUBLIC APP URL:
+https://ais-pre-clxmtq4b6kwszyihq4tu6n-190436024907.asia-southeast1.run.app
+
+2. VERIFIED TEST USER PUBLIC LINK (NO LOGIN REQUIRED):
+https://ais-pre-clxmtq4b6kwszyihq4tu6n-190436024907.asia-southeast1.run.app/?u=WB7x9Km2Pq4Rt8Vz3N
+- Public User ID (query parameter "u"): WB7x9Km2Pq4Rt8Vz3N
+- Firebase Project: gen-lang-client-0530252854
+- Firestore Database: ai-studio-android-winnerba-3979b9d3-2b97-4683-a1fe-d975aa7e02e4
+
+3. DEVELOPMENT WORKSPACE URL:
+https://ais-dev-clxmtq4b6kwszyihq4tu6n-190436024907.asia-southeast1.run.app/?u=WB7x9Km2Pq4Rt8Vz3N

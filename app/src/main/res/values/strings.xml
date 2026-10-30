@@ -1,0 +1,70 @@
+<resources>
+    <string name="app_name">Winner Balance</string>
+    <string name="brand_header_title">WINNER BALANCE</string>
+    <string name="brand_subtitle">Bangkok Financial Portal</string>
+    <string name="offline_banner_message">Internet connection required.</string>
+    <string name="offline_reconnecting_subtitle">Live financial actions are paused until your network connection returns.</string>
+    <string name="thailand_timezone_badge">Asia/Bangkok (ICT)</string>
+
+    <!-- Gateway / Portal Screen -->
+    <string name="gateway_open_user_title">Open Individual User Page</string>
+    <string name="gateway_open_user_subtitle">Enter a shared public user URL or unique public ID to view balance, bKash deposit, and bank withdrawal options without signing in.</string>
+    <string name="gateway_link_input_label">Public User Link or ID (e.g. ?u=WB7x9Km2Pq4Rt8Vz3N)</string>
+    <string name="gateway_open_page_button">Open User Page</string>
+    <string name="gateway_admin_portal_button">Admin Dashboard</string>
+    <string name="gateway_admin_login_button">Admin Sign In</string>
+
+    <!-- Public User Page -->
+    <string name="user_balance_label">Current Balance</string>
+    <string name="user_currency_bdt">BDT</string>
+    <string name="user_deposit_button">Deposit</string>
+    <string name="user_withdraw_button">Withdraw</string>
+    <string name="user_bkash_only_subtitle">bKash Payment Only</string>
+    <string name="user_bank_only_subtitle">Bank Account Transfer Only</string>
+    <string name="user_promo_section_title">Featured Financial Highlights</string>
+    <string name="user_requests_section_title">Deposit &amp; Withdrawal Status</string>
+    <string name="user_requests_empty">No deposit or withdrawal requests have been submitted for this page yet.</string>
+    <string name="user_link_invalid_title">User Page Unavailable</string>
+    <string name="user_link_invalid_message">This public user link does not match an active user record. Please verify the shared URL with the administrator.</string>
+    <string name="user_link_disabled_title">User Link Disabled</string>
+    <string name="user_link_disabled_message">Access to this public user page has been temporarily disabled by the administrator.</string>
+    <string name="back_to_portal_button">Return to Portal</string>
+
+    <!-- Deposit Form (bKash Only) -->
+    <string name="deposit_sheet_title">Submit bKash Deposit</string>
+    <string name="deposit_bkash_number_label">Send Payment to Official bKash Number</string>
+    <string name="copy_number_button">Copy</string>
+    <string name="deposit_amount_label">Deposit Amount (BDT)</string>
+    <string name="deposit_sender_number_label">Sender\'s bKash Number</string>
+    <string name="deposit_trx_id_label">Transaction ID</string>
+    <string name="deposit_submit_button">Submit Deposit Request</string>
+
+    <!-- Withdrawal Form (Bank Account Only) -->
+    <string name="withdraw_sheet_title">Request Bank Withdrawal</string>
+    <string name="withdraw_amount_label">Withdrawal Amount (BDT)</string>
+    <string name="withdraw_bank_name_label">Bank Name</string>
+    <string name="withdraw_holder_name_label">Account Holder Name</string>
+    <string name="withdraw_account_number_label">Bank Account Number</string>
+    <string name="withdraw_submit_button">Submit Withdrawal Request</string>
+
+    <!-- Admin Auth & Dashboard -->
+    <string name="admin_login_title">Administrator Sign In</string>
+    <string name="admin_login_subtitle">Sign in with your authorized Google account to manage user balances, bKash deposits, bank withdrawals, and website branding.</string>
+    <string name="admin_google_sign_in_button">Sign in with Google</string>
+    <string name="admin_google_security_note">Secured by Google Sign-In, Firebase Authentication, and Cloud Firestore zero-trust rules.</string>
+    <string name="admin_sign_out_button">Sign Out</string>
+
+    <!-- Media Customization -->
+    <string name="edit_logo_cd">Edit application logo</string>
+    <string name="edit_user_avatar_cd">Edit user logo photo</string>
+    <string name="user_avatar_cd">User profile logo</string>
+    <string name="edit_main_banner_cd">Edit main top banner</string>
+    <string name="edit_promo_banner_1_cd">Edit promotional banner 1</string>
+    <string name="edit_promo_banner_2_cd">Edit promotional banner 2</string>
+    <string name="edit_promo_banner_3_cd">Edit promotional banner 3</string>
+    <string name="media_upload_select_button">Choose Image</string>
+    <string name="media_upload_save_button">Save Image</string>
+    <string name="media_upload_reset_button">Remove Custom Image</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="confirm_button">Confirm</string>
+</resources>

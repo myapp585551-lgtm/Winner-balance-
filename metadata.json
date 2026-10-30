@@ -1,0 +1,6 @@
+{
+  "name": "Winner Balance",
+  "description": "Financial dashboard with BDT balance management, bKash deposits, bank withdrawals, customizable banners, and secure admin controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

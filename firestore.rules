@@ -1,0 +1,630 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ------------------------------------------------------------------------
+    // Global Hardened Primitives
+    // ------------------------------------------------------------------------
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidPublicId(id) {
+      return id is string && id.size() >= 8 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTrxId(id) {
+      return id is string && id.size() >= 6 && id.size() <= 24 && id.matches('^[A-Z0-9]+$');
+    }
+
+    function isValidBkash(phone) {
+      return phone is string && phone.size() == 11 && phone.matches('^01[3-9][0-9]{8}$');
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isOptionalUri(data, field) {
+      return !(field in data) || data[field] == null || (data[field] is string && data[field].size() >= 1 && data[field].size() <= 2048);
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() &&
+             ('email' in request.auth.token) &&
+             ('email_verified' in request.auth.token) &&
+             request.auth.token.email is string &&
+             request.auth.token.email.size() <= 160 &&
+             request.auth.token.email == 'devroy58555120@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isDocOwner(ownerUid) {
+      return isSignedIn() && (request.auth.uid == ownerUid || isBootstrappedAdmin());
+    }
+
+    // ------------------------------------------------------------------------
+    // Validation Blueprints (Pillar 2: Anti-Update-Gap)
+    // ------------------------------------------------------------------------
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll(['ownerUid', 'bkashNumber', 'productionBaseUrl', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly([
+               'ownerUid', 'bkashNumber', 'productionBaseUrl',
+               'logoUri', 'mainBannerUri', 'promoBanner1Uri', 'promoBanner2Uri', 'promoBanner3Uri',
+               'createdAt', 'updatedAt'
+             ]) &&
+             isValidId(data.ownerUid) &&
+             isValidBkash(data.bkashNumber) &&
+             data.productionBaseUrl is string && data.productionBaseUrl.size() >= 8 && data.productionBaseUrl.size() <= 300 &&
+             data.productionBaseUrl.matches('^https://.*') &&
+             isOptionalUri(data, 'logoUri') &&
+             isOptionalUri(data, 'mainBannerUri') &&
+             isOptionalUri(data, 'promoBanner1Uri') &&
+             isOptionalUri(data, 'promoBanner2Uri') &&
+             isOptionalUri(data, 'promoBanner3Uri') &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll([
+               'userId', 'publicId', 'ownerUid', 'displayName',
+               'balancePaisa', 'reservedPaisa', 'isActive', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'publicId', 'ownerUid', 'displayName',
+               'balancePaisa', 'reservedPaisa', 'isActive', 'avatarUri', 'createdAt', 'updatedAt'
+             ]) &&
+             isValidId(data.userId) &&
+             isValidPublicId(data.publicId) &&
+             isValidId(data.ownerUid) &&
+             data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 80 &&
+             data.balancePaisa is int && data.balancePaisa >= 0 && data.balancePaisa <= 1000000000000 &&
+             data.reservedPaisa is int && data.reservedPaisa >= 0 && data.reservedPaisa <= data.balancePaisa &&
+             data.isActive is bool &&
+             isOptionalUri(data, 'avatarUri') &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPublicUser(data) {
+      return data.keys().hasAll([
+               'publicId', 'userId', 'ownerUid', 'displayName',
+               'balancePaisa', 'reservedPaisa', 'isActive', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'publicId', 'userId', 'ownerUid', 'displayName',
+               'balancePaisa', 'reservedPaisa', 'isActive', 'avatarUri',
+               'lastWithdrawalRequestId', 'createdAt', 'updatedAt'
+             ]) &&
+             isValidPublicId(data.publicId) &&
+             isValidId(data.userId) &&
+             isValidId(data.ownerUid) &&
+             data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 80 &&
+             data.balancePaisa is int && data.balancePaisa >= 0 && data.balancePaisa <= 1000000000000 &&
+             data.reservedPaisa is int && data.reservedPaisa >= 0 && data.reservedPaisa <= data.balancePaisa &&
+             data.isActive is bool &&
+             isOptionalUri(data, 'avatarUri') &&
+             (!('lastWithdrawalRequestId' in data) || data.lastWithdrawalRequestId == null || isValidId(data.lastWithdrawalRequestId)) &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPublicRequestStatus(data) {
+      return data.keys().hasAll([
+               'requestId', 'publicId', 'ownerUid', 'requestType',
+               'amountPaisa', 'summaryLabel', 'status', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'requestId', 'publicId', 'ownerUid', 'requestType',
+               'amountPaisa', 'summaryLabel', 'status', 'createdAt', 'updatedAt'
+             ]) &&
+             isValidId(data.requestId) &&
+             isValidPublicId(data.publicId) &&
+             isValidId(data.ownerUid) &&
+             data.requestType in ['DEPOSIT', 'WITHDRAWAL'] &&
+             data.amountPaisa is int && data.amountPaisa > 0 && data.amountPaisa <= 1000000000000 &&
+             data.summaryLabel is string && data.summaryLabel.size() >= 1 && data.summaryLabel.size() <= 140 &&
+             data.status in ['PENDING', 'PROCESSING', 'APPROVED', 'REJECTED'] &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidDepositRequest(data) {
+      return data.keys().hasAll([
+               'requestId', 'userId', 'publicId', 'ownerUid', 'userDisplayName',
+               'amountPaisa', 'senderBkashNumber', 'transactionId', 'status',
+               'isCredited', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'requestId', 'userId', 'publicId', 'ownerUid', 'userDisplayName',
+               'amountPaisa', 'senderBkashNumber', 'transactionId', 'status',
+               'isCredited', 'createdAt', 'updatedAt'
+             ]) &&
+             isValidId(data.requestId) &&
+             isValidId(data.userId) &&
+             isValidPublicId(data.publicId) &&
+             isValidId(data.ownerUid) &&
+             data.userDisplayName is string && data.userDisplayName.size() >= 2 && data.userDisplayName.size() <= 80 &&
+             data.amountPaisa is int && data.amountPaisa > 0 && data.amountPaisa <= 1000000000000 &&
+             isValidBkash(data.senderBkashNumber) &&
+             isValidTrxId(data.transactionId) &&
+             data.status in ['PENDING', 'PROCESSING', 'APPROVED', 'REJECTED'] &&
+             data.isCredited is bool &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidDepositTrxLock(data) {
+      return data.keys().hasAll(['transactionId', 'requestId', 'publicId', 'ownerUid', 'createdAt']) &&
+             data.keys().hasOnly(['transactionId', 'requestId', 'publicId', 'ownerUid', 'createdAt']) &&
+             isValidTrxId(data.transactionId) &&
+             isValidId(data.requestId) &&
+             isValidPublicId(data.publicId) &&
+             isValidId(data.ownerUid) &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidWithdrawalRequest(data) {
+      return data.keys().hasAll([
+               'requestId', 'userId', 'publicId', 'ownerUid', 'userDisplayName',
+               'amountPaisa', 'bankName', 'accountHolderName', 'bankAccountNumber',
+               'status', 'isReserved', 'isDeducted', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'requestId', 'userId', 'publicId', 'ownerUid', 'userDisplayName',
+               'amountPaisa', 'bankName', 'accountHolderName', 'bankAccountNumber',
+               'status', 'isReserved', 'isDeducted', 'createdAt', 'updatedAt'
+             ]) &&
+             isValidId(data.requestId) &&
+             isValidId(data.userId) &&
+             isValidPublicId(data.publicId) &&
+             isValidId(data.ownerUid) &&
+             data.userDisplayName is string && data.userDisplayName.size() >= 2 && data.userDisplayName.size() <= 80 &&
+             data.amountPaisa is int && data.amountPaisa > 0 && data.amountPaisa <= 1000000000000 &&
+             data.bankName is string && data.bankName.size() >= 2 && data.bankName.size() <= 80 &&
+             data.accountHolderName is string && data.accountHolderName.size() >= 2 && data.accountHolderName.size() <= 80 &&
+             data.bankAccountNumber is string && data.bankAccountNumber.size() >= 6 && data.bankAccountNumber.size() <= 34 &&
+             data.bankAccountNumber.matches('^[A-Za-z0-9\\- ]+$') &&
+             data.status in ['PENDING', 'PROCESSING', 'APPROVED', 'REJECTED'] &&
+             data.isReserved is bool &&
+             data.isDeducted is bool &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidLedgerEntry(data) {
+      return data.keys().hasAll([
+               'entryId', 'userId', 'ownerUid', 'userDisplayName', 'actionType',
+               'deltaPaisa', 'balanceBeforePaisa', 'balanceAfterPaisa',
+               'referenceId', 'note', 'actorEmail', 'createdAt'
+             ]) &&
+             data.keys().hasOnly([
+               'entryId', 'userId', 'ownerUid', 'userDisplayName', 'actionType',
+               'deltaPaisa', 'balanceBeforePaisa', 'balanceAfterPaisa',
+               'referenceId', 'note', 'actorEmail', 'createdAt'
+             ]) &&
+             isValidId(data.entryId) &&
+             isValidId(data.userId) &&
+             isValidId(data.ownerUid) &&
+             data.userDisplayName is string && data.userDisplayName.size() >= 2 && data.userDisplayName.size() <= 80 &&
+             data.actionType in [
+               'USER_CREATED',
+               'ADMIN_BALANCE_ADJUSTED',
+               'DEPOSIT_APPROVED',
+               'WITHDRAWAL_RESERVED',
+               'WITHDRAWAL_APPROVED',
+               'WITHDRAWAL_RELEASED'
+             ] &&
+             data.deltaPaisa is int &&
+             data.balanceBeforePaisa is int && data.balanceBeforePaisa >= 0 &&
+             data.balanceAfterPaisa is int && data.balanceAfterPaisa >= 0 &&
+             data.referenceId is string && data.referenceId.size() >= 1 && data.referenceId.size() <= 128 &&
+             data.note is string && data.note.size() >= 1 && data.note.size() <= 500 &&
+             data.actorEmail is string && data.actorEmail.size() >= 3 && data.actorEmail.size() <= 160 &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    // ------------------------------------------------------------------------
+    // 1. Site Settings (/site_settings/{settingId})
+    // ------------------------------------------------------------------------
+    match /site_settings/{settingId} {
+      allow get: if settingId == 'global' || (isSignedIn() && isValidId(settingId) && isDocOwner(existing().ownerUid));
+      allow list: if false;
+
+      allow create: if isValidId(settingId) &&
+                       isValidSiteSettings(incoming()) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       (
+                         (isSignedIn() && incoming().ownerUid == request.auth.uid) ||
+                         (
+                           settingId == 'global' &&
+                           !exists(/databases/$(database)/documents/site_settings/global) &&
+                           incoming().ownerUid == 'bootstrap_system' &&
+                           incoming().bkashNumber == '01700000000'
+                         )
+                       );
+
+      allow update: if isSignedIn() &&
+                       isValidId(settingId) &&
+                       isValidSiteSettings(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'bkashNumber', 'productionBaseUrl',
+                             'logoUri', 'mainBannerUri', 'promoBanner1Uri', 'promoBanner2Uri', 'promoBanner3Uri',
+                             'updatedAt'
+                           ])
+                         ) ||
+                         (
+                           existing().ownerUid == 'bootstrap_system' &&
+                           incoming().ownerUid == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'ownerUid', 'bkashNumber', 'productionBaseUrl',
+                             'logoUri', 'mainBannerUri', 'promoBanner1Uri', 'promoBanner2Uri', 'promoBanner3Uri',
+                             'updatedAt'
+                           ])
+                         ) ||
+                         isBootstrappedAdmin()
+                       );
+
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------------------------------
+    // 2. Admin User Records (/admin_users/{userId}) — Strictly Private to Owner
+    // ------------------------------------------------------------------------
+    match /admin_users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && isDocOwner(existing().ownerUid);
+      allow list: if isSignedIn() && isDocOwner(existing().ownerUid);
+
+      allow create: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidAdminUser(incoming()) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       incoming().userId == userId &&
+                       incoming().ownerUid == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+                       isValidId(userId) &&
+                       isValidAdminUser(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'publicId', 'displayName', 'balancePaisa', 'reservedPaisa',
+                             'isActive', 'avatarUri', 'updatedAt'
+                           ])
+                         ) ||
+                         isBootstrappedAdmin()
+                       );
+
+      allow delete: if isSignedIn() && isValidId(userId) && isDocOwner(existing().ownerUid);
+    }
+
+    // ------------------------------------------------------------------------
+    // 3. Public User Pages (/public_users/{publicId}) — Capability-Scoped Get, No Public List
+    // ------------------------------------------------------------------------
+    match /public_users/{publicId} {
+      // Single-document lookup by unguessable publicId capability token works without admin login
+      allow get: if isValidPublicId(publicId);
+      // Enumeration is strictly forbidden to unauthenticated callers and other users
+      allow list: if isSignedIn() && isDocOwner(existing().ownerUid);
+
+      allow create: if isValidPublicId(publicId) &&
+                       isValidPublicUser(incoming()) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       incoming().publicId == publicId &&
+                       (
+                         (isSignedIn() && incoming().ownerUid == request.auth.uid) ||
+                         (
+                           publicId == 'WB7x9Km2Pq4Rt8Vz3N' &&
+                           !exists(/databases/$(database)/documents/public_users/WB7x9Km2Pq4Rt8Vz3N) &&
+                           incoming().userId == 'usr-verified-wb01' &&
+                           incoming().ownerUid == 'bootstrap_system' &&
+                           incoming().displayName == 'Tanvir Rahman' &&
+                           incoming().balancePaisa == 125000 &&
+                           incoming().reservedPaisa == 0 &&
+                           incoming().isActive == true
+                         )
+                       );
+
+      allow update: if isValidPublicId(publicId) &&
+                       isValidPublicUser(incoming()) &&
+                       incoming().publicId == existing().publicId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         // Action 1: Authenticated Owner Admin update
+                         (
+                           isSignedIn() &&
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'displayName', 'balancePaisa', 'reservedPaisa',
+                             'isActive', 'avatarUri', 'lastWithdrawalRequestId', 'updatedAt'
+                           ])
+                         ) ||
+                         // Action 2: Authenticated Admin claiming initial cold-bootstrapped user
+                         (
+                           isSignedIn() &&
+                           existing().ownerUid == 'bootstrap_system' &&
+                           incoming().ownerUid == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'ownerUid', 'displayName', 'balancePaisa', 'reservedPaisa',
+                             'isActive', 'avatarUri', 'lastWithdrawalRequestId', 'updatedAt'
+                           ])
+                         ) ||
+                         // Action 3: Atomic Public Withdrawal Hold (Pillar 7: existsAfter + getAfter)
+                         (
+                           existing().isActive == true &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().balancePaisa == existing().balancePaisa &&
+                           incoming().reservedPaisa > existing().reservedPaisa &&
+                           incoming().reservedPaisa <= existing().balancePaisa &&
+                           ('lastWithdrawalRequestId' in incoming()) &&
+                           isValidId(incoming().lastWithdrawalRequestId) &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'reservedPaisa', 'lastWithdrawalRequestId', 'updatedAt'
+                           ]) &&
+                           !exists(/databases/$(database)/documents/withdrawal_requests/$(incoming().lastWithdrawalRequestId)) &&
+                           existsAfter(/databases/$(database)/documents/withdrawal_requests/$(incoming().lastWithdrawalRequestId)) &&
+                           getAfter(/databases/$(database)/documents/withdrawal_requests/$(incoming().lastWithdrawalRequestId)).data.publicId == publicId &&
+                           getAfter(/databases/$(database)/documents/withdrawal_requests/$(incoming().lastWithdrawalRequestId)).data.amountPaisa == (incoming().reservedPaisa - existing().reservedPaisa)
+                         ) ||
+                         // Action 4: Bootstrapped Admin emergency override
+                         isBootstrappedAdmin()
+                       );
+
+      allow delete: if isSignedIn() && isValidPublicId(publicId) && isDocOwner(existing().ownerUid);
+
+      // ----------------------------------------------------------------------
+      // 3A. Non-PII Request Status Feed (/public_users/{publicId}/request_statuses/{requestId})
+      // ----------------------------------------------------------------------
+      match /request_statuses/{requestId} {
+        allow get: if isValidPublicId(publicId) && isValidId(requestId);
+        allow list: if isValidPublicId(publicId);
+
+        allow create: if isValidPublicId(publicId) &&
+                         isValidId(requestId) &&
+                         isValidPublicRequestStatus(incoming()) &&
+                         isValidTimestamp(incoming().createdAt) &&
+                         incoming().requestId == requestId &&
+                         incoming().publicId == publicId &&
+                         incoming().status == 'PENDING' &&
+                         exists(/databases/$(database)/documents/public_users/$(publicId)) &&
+                         get(/databases/$(database)/documents/public_users/$(publicId)).data.isActive == true &&
+                         incoming().ownerUid == get(/databases/$(database)/documents/public_users/$(publicId)).data.ownerUid &&
+                         (
+                           (incoming().requestType == 'DEPOSIT' && existsAfter(/databases/$(database)/documents/deposit_requests/$(requestId))) ||
+                           (incoming().requestType == 'WITHDRAWAL' && existsAfter(/databases/$(database)/documents/withdrawal_requests/$(requestId)))
+                         );
+
+        allow update: if isSignedIn() &&
+                         isValidPublicId(publicId) &&
+                         isValidId(requestId) &&
+                         isValidPublicRequestStatus(incoming()) &&
+                         incoming().requestId == existing().requestId &&
+                         incoming().publicId == existing().publicId &&
+                         incoming().requestType == existing().requestType &&
+                         incoming().amountPaisa == existing().amountPaisa &&
+                         incoming().createdAt == existing().createdAt &&
+                         (
+                           (
+                             isDocOwner(existing().ownerUid) &&
+                             incoming().ownerUid == existing().ownerUid &&
+                             !(existing().status in ['APPROVED', 'REJECTED']) &&
+                             incoming().diff(existing()).affectedKeys().hasOnly(['status', 'summaryLabel', 'updatedAt'])
+                           ) ||
+                           (
+                             existing().ownerUid == 'bootstrap_system' &&
+                             incoming().ownerUid == request.auth.uid &&
+                             incoming().diff(existing()).affectedKeys().hasOnly(['ownerUid', 'status', 'summaryLabel', 'updatedAt'])
+                           ) ||
+                           isBootstrappedAdmin()
+                         );
+
+        allow delete: if isSignedIn() && isValidPublicId(publicId) && isValidId(requestId) && isDocOwner(existing().ownerUid);
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 4. Deposit Requests (/deposit_requests/{requestId}) — PII Isolated
+    // ------------------------------------------------------------------------
+    match /deposit_requests/{requestId} {
+      allow get: if isSignedIn() && isValidId(requestId) && isDocOwner(existing().ownerUid);
+      allow list: if isSignedIn() && isDocOwner(existing().ownerUid);
+
+      allow create: if isValidId(requestId) &&
+                       isValidDepositRequest(incoming()) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       incoming().requestId == requestId &&
+                       incoming().status == 'PENDING' &&
+                       incoming().isCredited == false &&
+                       exists(/databases/$(database)/documents/public_users/$(incoming().publicId)) &&
+                       get(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.isActive == true &&
+                       incoming().userId == get(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.userId &&
+                       incoming().ownerUid == get(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.ownerUid &&
+                       !exists(/databases/$(database)/documents/deposit_trx_locks/$(incoming().transactionId)) &&
+                       existsAfter(/databases/$(database)/documents/deposit_trx_locks/$(incoming().transactionId)) &&
+                       existsAfter(/databases/$(database)/documents/public_users/$(incoming().publicId)/request_statuses/$(requestId));
+
+      allow update: if isSignedIn() &&
+                       isValidId(requestId) &&
+                       isValidDepositRequest(incoming()) &&
+                       incoming().requestId == existing().requestId &&
+                       incoming().userId == existing().userId &&
+                       incoming().publicId == existing().publicId &&
+                       incoming().amountPaisa == existing().amountPaisa &&
+                       incoming().senderBkashNumber == existing().senderBkashNumber &&
+                       incoming().transactionId == existing().transactionId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           !(existing().status in ['APPROVED', 'REJECTED']) &&
+                           existing().isCredited == false &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'isCredited', 'userDisplayName', 'updatedAt'])
+                         ) ||
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().status == existing().status &&
+                           incoming().isCredited == existing().isCredited &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['userDisplayName', 'updatedAt'])
+                         ) ||
+                         (
+                           existing().ownerUid == 'bootstrap_system' &&
+                           incoming().ownerUid == request.auth.uid &&
+                           incoming().status == existing().status &&
+                           incoming().isCredited == existing().isCredited &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['ownerUid', 'updatedAt'])
+                         ) ||
+                         isBootstrappedAdmin()
+                       );
+
+      allow delete: if isSignedIn() && isValidId(requestId) && isDocOwner(existing().ownerUid);
+    }
+
+    // ------------------------------------------------------------------------
+    // 5. Deposit Transaction ID Locks (/deposit_trx_locks/{trxId}) — Anti-Replay
+    // ------------------------------------------------------------------------
+    match /deposit_trx_locks/{trxId} {
+      allow get: if isValidTrxId(trxId);
+      allow list: if false;
+
+      allow create: if isValidTrxId(trxId) &&
+                       isValidDepositTrxLock(incoming()) &&
+                       incoming().transactionId == trxId &&
+                       existsAfter(/databases/$(database)/documents/deposit_requests/$(incoming().requestId)) &&
+                       getAfter(/databases/$(database)/documents/deposit_requests/$(incoming().requestId)).data.transactionId == trxId;
+
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidTrxId(trxId) && isDocOwner(existing().ownerUid);
+    }
+
+    // ------------------------------------------------------------------------
+    // 6. Withdrawal Requests (/withdrawal_requests/{requestId}) — PII Isolated
+    // ------------------------------------------------------------------------
+    match /withdrawal_requests/{requestId} {
+      allow get: if isSignedIn() && isValidId(requestId) && isDocOwner(existing().ownerUid);
+      allow list: if isSignedIn() && isDocOwner(existing().ownerUid);
+
+      allow create: if isValidId(requestId) &&
+                       isValidWithdrawalRequest(incoming()) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       incoming().requestId == requestId &&
+                       incoming().status == 'PENDING' &&
+                       incoming().isReserved == true &&
+                       incoming().isDeducted == false &&
+                       exists(/databases/$(database)/documents/public_users/$(incoming().publicId)) &&
+                       get(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.isActive == true &&
+                       incoming().userId == get(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.userId &&
+                       incoming().ownerUid == get(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.ownerUid &&
+                       getAfter(/databases/$(database)/documents/public_users/$(incoming().publicId)).data.lastWithdrawalRequestId == requestId &&
+                       existsAfter(/databases/$(database)/documents/public_users/$(incoming().publicId)/request_statuses/$(requestId));
+
+      allow update: if isSignedIn() &&
+                       isValidId(requestId) &&
+                       isValidWithdrawalRequest(incoming()) &&
+                       incoming().requestId == existing().requestId &&
+                       incoming().userId == existing().userId &&
+                       incoming().publicId == existing().publicId &&
+                       incoming().amountPaisa == existing().amountPaisa &&
+                       incoming().bankName == existing().bankName &&
+                       incoming().accountHolderName == existing().accountHolderName &&
+                       incoming().bankAccountNumber == existing().bankAccountNumber &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           !(existing().status in ['APPROVED', 'REJECTED']) &&
+                           existing().isDeducted == false &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'isReserved', 'isDeducted', 'userDisplayName', 'updatedAt'])
+                         ) ||
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().status == existing().status &&
+                           incoming().isReserved == existing().isReserved &&
+                           incoming().isDeducted == existing().isDeducted &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['userDisplayName', 'updatedAt'])
+                         ) ||
+                         (
+                           existing().ownerUid == 'bootstrap_system' &&
+                           incoming().ownerUid == request.auth.uid &&
+                           incoming().status == existing().status &&
+                           incoming().isReserved == existing().isReserved &&
+                           incoming().isDeducted == existing().isDeducted &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['ownerUid', 'updatedAt'])
+                         ) ||
+                         isBootstrappedAdmin()
+                       );
+
+      allow delete: if isSignedIn() && isValidId(requestId) && isDocOwner(existing().ownerUid);
+    }
+
+    // ------------------------------------------------------------------------
+    // 7. Audit Ledger Entries (/ledger_entries/{entryId}) — Append-Only
+    // ------------------------------------------------------------------------
+    match /ledger_entries/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && isDocOwner(existing().ownerUid);
+      allow list: if isSignedIn() && isDocOwner(existing().ownerUid);
+
+      allow create: if isSignedIn() &&
+                       isValidId(entryId) &&
+                       isValidLedgerEntry(incoming()) &&
+                       incoming().entryId == entryId &&
+                       incoming().ownerUid == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+                       isValidId(entryId) &&
+                       isValidLedgerEntry(incoming()) &&
+                       incoming().entryId == existing().entryId &&
+                       incoming().userId == existing().userId &&
+                       incoming().actionType == existing().actionType &&
+                       incoming().deltaPaisa == existing().deltaPaisa &&
+                       incoming().balanceBeforePaisa == existing().balanceBeforePaisa &&
+                       incoming().balanceAfterPaisa == existing().balanceAfterPaisa &&
+                       incoming().referenceId == existing().referenceId &&
+                       incoming().note == existing().note &&
+                       incoming().actorEmail == existing().actorEmail &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (
+                           isDocOwner(existing().ownerUid) &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['userDisplayName'])
+                         ) ||
+                         isBootstrappedAdmin()
+                       );
+
+      allow delete: if false;
+    }
+  }
+}

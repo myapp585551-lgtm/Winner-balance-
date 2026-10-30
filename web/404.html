@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WINNER BALANCE — Redirecting...</title>
+  <script>
+    (function () {
+      var search = window.location.search || "";
+      var path = window.location.pathname || "/";
+      var hash = window.location.hash || "";
+      if (search.indexOf("u=") !== -1) {
+        window.location.replace("/" + search + hash);
+        return;
+      }
+      var match = path.match(/\/u\/([A-Za-z0-9_-]{8,64})/);
+      if (match && match[1]) {
+        window.location.replace("/?u=" + encodeURIComponent(match[1]));
+        return;
+      }
+      window.location.replace("/" + search + hash);
+    })();
+  </script>
+</head>
+<body style="background:#FFFFFF;color:#1D4ED8;font-family:sans-serif;padding:24px;font-weight:700;">
+  Opening Winner Balance...
+</body>
+</html>

@@ -1,0 +1,543 @@
+{
+  "entities": {
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global portal branding, official merchant bKash payment number, and deployed public base URL.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "description": "UID of the administrator managing portal settings."
+        },
+        "bkashNumber": {
+          "type": "string",
+          "description": "11-digit official Bangladesh bKash merchant/personal number."
+        },
+        "productionBaseUrl": {
+          "type": "string",
+          "description": "Active HTTPS deployed base URL used to generate public user links."
+        },
+        "logoUri": {
+          "type": "string",
+          "description": "Optional custom logo URI or data URL."
+        },
+        "mainBannerUri": {
+          "type": "string",
+          "description": "Optional custom main top banner URI or data URL."
+        },
+        "promoBanner1Uri": {
+          "type": "string",
+          "description": "Optional custom promotional banner 1 URI or data URL."
+        },
+        "promoBanner2Uri": {
+          "type": "string",
+          "description": "Optional custom promotional banner 2 URI or data URL."
+        },
+        "promoBanner3Uri": {
+          "type": "string",
+          "description": "Optional custom promotional banner 3 URI or data URL."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "bkashNumber",
+        "productionBaseUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Administrator-scoped user account record including internal ID and status controls.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Internal user record identifier."
+        },
+        "publicId": {
+          "type": "string",
+          "description": "Unguessable capability token used in public ?u= links."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Authenticated administrator UID owning this user record."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User full display name."
+        },
+        "balancePaisa": {
+          "type": "integer",
+          "description": "Displayed balance stored in integer paisa (100 paisa = 1.00 BDT)."
+        },
+        "reservedPaisa": {
+          "type": "integer",
+          "description": "Amount reserved for pending bank withdrawal requests in paisa."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the public user link is active."
+        },
+        "avatarUri": {
+          "type": "string",
+          "description": "Optional user profile avatar URI or data URL."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "publicId",
+        "ownerUid",
+        "displayName",
+        "balancePaisa",
+        "reservedPaisa",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PublicUser": {
+      "title": "PublicUser",
+      "description": "Strictly non-PII public projection of an individual user balance page keyed by publicId.",
+      "type": "object",
+      "properties": {
+        "publicId": {
+          "type": "string",
+          "description": "Unguessable capability ID matching document key."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Associated internal user ID."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Administrator UID owning this public user projection."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User full display name shown on public page."
+        },
+        "balancePaisa": {
+          "type": "integer",
+          "description": "Displayed BDT balance in paisa."
+        },
+        "reservedPaisa": {
+          "type": "integer",
+          "description": "Pending withdrawal hold in paisa."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether this public user page is enabled."
+        },
+        "avatarUri": {
+          "type": "string",
+          "description": "Optional user profile logo URI."
+        },
+        "lastWithdrawalRequestId": {
+          "type": "string",
+          "description": "Optional ID of the latest public withdrawal request for atomic hold validation."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "publicId",
+        "userId",
+        "ownerUid",
+        "displayName",
+        "balancePaisa",
+        "reservedPaisa",
+        "isActive",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PublicRequestStatus": {
+      "title": "PublicRequestStatus",
+      "description": "Non-PII deposit and withdrawal status summary scoped to a single public user page.",
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "Unique request identifier."
+        },
+        "publicId": {
+          "type": "string",
+          "description": "Parent public user ID."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Administrator UID owning the parent user."
+        },
+        "requestType": {
+          "type": "string",
+          "enum": ["DEPOSIT", "WITHDRAWAL"],
+          "description": "Type of financial request."
+        },
+        "amountPaisa": {
+          "type": "integer",
+          "description": "Requested amount in paisa."
+        },
+        "summaryLabel": {
+          "type": "string",
+          "description": "Non-PII display label (e.g., TrxID or Bank Name)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "PROCESSING", "APPROVED", "REJECTED"],
+          "description": "Verification status."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Status update timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "requestId",
+        "publicId",
+        "ownerUid",
+        "requestType",
+        "amountPaisa",
+        "summaryLabel",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DepositRequest": {
+      "title": "DepositRequest",
+      "description": "PII-isolated bKash deposit verification request visible only to the owning administrator.",
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "Unique deposit request ID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Associated internal user ID."
+        },
+        "publicId": {
+          "type": "string",
+          "description": "Associated public user ID."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Administrator UID owning the user account."
+        },
+        "userDisplayName": {
+          "type": "string",
+          "description": "Snapshot of user display name."
+        },
+        "amountPaisa": {
+          "type": "integer",
+          "description": "Deposit amount in paisa."
+        },
+        "senderBkashNumber": {
+          "type": "string",
+          "description": "11-digit sender bKash phone number (PII)."
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Uppercase alphanumeric bKash Transaction ID."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "PROCESSING", "APPROVED", "REJECTED"],
+          "description": "Current verification status."
+        },
+        "isCredited": {
+          "type": "boolean",
+          "description": "Whether balance has been credited once."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "requestId",
+        "userId",
+        "publicId",
+        "ownerUid",
+        "userDisplayName",
+        "amountPaisa",
+        "senderBkashNumber",
+        "transactionId",
+        "status",
+        "isCredited",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DepositTrxLock": {
+      "title": "DepositTrxLock",
+      "description": "Uniqueness lock preventing duplicate bKash Transaction ID submissions.",
+      "type": "object",
+      "properties": {
+        "transactionId": {
+          "type": "string",
+          "description": "Normalized bKash Transaction ID."
+        },
+        "requestId": {
+          "type": "string",
+          "description": "Deposit request ID owning this transaction lock."
+        },
+        "publicId": {
+          "type": "string",
+          "description": "Public user ID submitting the deposit."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Administrator UID owning the target user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Lock timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "transactionId",
+        "requestId",
+        "publicId",
+        "ownerUid",
+        "createdAt"
+      ]
+    },
+    "WithdrawalRequest": {
+      "title": "WithdrawalRequest",
+      "description": "PII-isolated bank withdrawal request visible only to the owning administrator.",
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "Unique withdrawal request ID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Associated internal user ID."
+        },
+        "publicId": {
+          "type": "string",
+          "description": "Associated public user ID."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Administrator UID owning the user account."
+        },
+        "userDisplayName": {
+          "type": "string",
+          "description": "Snapshot of user display name."
+        },
+        "amountPaisa": {
+          "type": "integer",
+          "description": "Requested withdrawal amount in paisa."
+        },
+        "bankName": {
+          "type": "string",
+          "description": "Target bank institution name."
+        },
+        "accountHolderName": {
+          "type": "string",
+          "description": "Bank account holder full name (PII)."
+        },
+        "bankAccountNumber": {
+          "type": "string",
+          "description": "Bank account number (PII)."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "PROCESSING", "APPROVED", "REJECTED"],
+          "description": "Current verification status."
+        },
+        "isReserved": {
+          "type": "boolean",
+          "description": "Whether amount is currently held in reservedPaisa."
+        },
+        "isDeducted": {
+          "type": "boolean",
+          "description": "Whether amount has been permanently deducted once."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "requestId",
+        "userId",
+        "publicId",
+        "ownerUid",
+        "userDisplayName",
+        "amountPaisa",
+        "bankName",
+        "accountHolderName",
+        "bankAccountNumber",
+        "status",
+        "isReserved",
+        "isDeducted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LedgerEntry": {
+      "title": "LedgerEntry",
+      "description": "Immutable financial audit log entry visible only to the owning administrator.",
+      "type": "object",
+      "properties": {
+        "entryId": {
+          "type": "string",
+          "description": "Unique ledger entry ID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Associated internal user ID."
+        },
+        "ownerUid": {
+          "type": "string",
+          "description": "Administrator UID owning the user account."
+        },
+        "userDisplayName": {
+          "type": "string",
+          "description": "User display name."
+        },
+        "actionType": {
+          "type": "string",
+          "enum": [
+            "USER_CREATED",
+            "ADMIN_BALANCE_ADJUSTED",
+            "DEPOSIT_APPROVED",
+            "WITHDRAWAL_RESERVED",
+            "WITHDRAWAL_APPROVED",
+            "WITHDRAWAL_RELEASED"
+          ],
+          "description": "Ledger event category."
+        },
+        "deltaPaisa": {
+          "type": "integer",
+          "description": "Signed balance change in paisa."
+        },
+        "balanceBeforePaisa": {
+          "type": "integer",
+          "description": "Balance before transaction in paisa."
+        },
+        "balanceAfterPaisa": {
+          "type": "integer",
+          "description": "Balance after transaction in paisa."
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Related request ID or public ID."
+        },
+        "note": {
+          "type": "string",
+          "description": "Audit explanation."
+        },
+        "actorEmail": {
+          "type": "string",
+          "description": "Email or system label of actor (PII)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Audit timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "entryId",
+        "userId",
+        "ownerUid",
+        "userDisplayName",
+        "actionType",
+        "deltaPaisa",
+        "balanceBeforePaisa",
+        "balanceAfterPaisa",
+        "referenceId",
+        "note",
+        "actorEmail",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/site_settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Global site settings document ('global')."
+    },
+    "/admin_users/{userId}": {
+      "schema": "AdminUser",
+      "description": "Administrator-owned full user records."
+    },
+    "/public_users/{publicId}": {
+      "schema": "PublicUser",
+      "description": "Non-PII public user balance pages keyed by unguessable publicId."
+    },
+    "/public_users/{publicId}/request_statuses/{requestId}": {
+      "schema": "PublicRequestStatus",
+      "description": "Non-PII status items displayed on an individual public user page."
+    },
+    "/deposit_requests/{requestId}": {
+      "schema": "DepositRequest",
+      "description": "PII-isolated bKash deposit requests."
+    },
+    "/deposit_trx_locks/{trxId}": {
+      "schema": "DepositTrxLock",
+      "description": "Transaction ID uniqueness locks for bKash deposits."
+    },
+    "/withdrawal_requests/{requestId}": {
+      "schema": "WithdrawalRequest",
+      "description": "PII-isolated bank withdrawal requests."
+    },
+    "/ledger_entries/{entryId}": {
+      "schema": "LedgerEntry",
+      "description": "Immutable financial audit trail entries."
+    }
+  }
+}
