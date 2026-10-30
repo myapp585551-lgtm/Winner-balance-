@@ -55,6 +55,28 @@ const ASSET_LINKS_JSON = JSON.stringify(
   2
 );
 
+const APK_CANDIDATES = [
+  path.resolve(__dirname, "../.build-outputs/app-debug.apk"),
+  path.resolve(__dirname, "../app/build/outputs/apk/debug/app-debug.apk"),
+];
+
+function resolveLatestApkPath() {
+  let newestFile = null;
+  let newestMtime = -1;
+  for (const candidate of APK_CANDIDATES) {
+    try {
+      const stat = fs.statSync(candidate);
+      if (stat.isFile() && stat.size > 0 && stat.mtimeMs > newestMtime) {
+        newestMtime = stat.mtimeMs;
+        newestFile = { file: candidate, size: stat.size };
+      }
+    } catch (_) {
+      // Ignore missing build candidate
+    }
+  }
+  return newestFile;
+}
+
 function requestHandler(req, res) {
   const parsedUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = parsedUrl.pathname;
@@ -65,6 +87,27 @@ function requestHandler(req, res) {
   if (pathname === "/healthz") {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ ok: true, service: "winner-balance-public-portal" }));
+    return;
+  }
+
+  if (pathname === "/download/Winner-Balance.apk" || pathname === "/download/apk") {
+    const apkInfo = resolveLatestApkPath();
+    if (!apkInfo) {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("APK build is currently being prepared. Please try again in a moment.");
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "application/vnd.android.package-archive",
+      "Content-Disposition": 'attachment; filename="Winner-Balance.apk"',
+      "Content-Length": String(apkInfo.size),
+      "Cache-Control": "no-store",
+    });
+    if (req.method === "HEAD") {
+      res.end();
+      return;
+    }
+    fs.createReadStream(apkInfo.file).pipe(res);
     return;
   }
 

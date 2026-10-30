@@ -27,9 +27,17 @@ class AndroidConnectivityObserver(context: Context) : ConnectivityChecker {
         appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     override fun isCurrentlyOnline(): Boolean {
-        val activeNetwork = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-        return hasUsableInternetCapability(capabilities)
+        val activeNetwork = connectivityManager.activeNetwork
+        if (activeNetwork != null) {
+            val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+            if (capabilities != null && hasUsableInternetCapability(capabilities)) {
+                return true
+            }
+        }
+        return connectivityManager.allNetworks.any { network ->
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            capabilities != null && hasUsableInternetCapability(capabilities)
+        }
     }
 
     override val isOnlineFlow: Flow<Boolean> = callbackFlow {
@@ -79,10 +87,7 @@ class AndroidConnectivityObserver(context: Context) : ConnectivityChecker {
         ) {
             return false
         }
-        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+        return true
     }
 }
 
